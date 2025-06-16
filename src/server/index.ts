@@ -1,4 +1,5 @@
 import { j } from './jstack';
+import { authRouter } from './routers/auth-router';
 import { chatRouter } from './routers/chat-router';
 import { completionsRouter } from './routers/completions-router';
 
@@ -21,6 +22,7 @@ const api = j
 const appRouter = j.mergeRouters(api, {
     chat: chatRouter,
     completions: completionsRouter,
+    auth: authRouter,
 });
 
 export type AppRouter = typeof appRouter;

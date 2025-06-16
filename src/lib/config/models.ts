@@ -74,14 +74,14 @@ export const MODELS = [
         provider: 'anthropic',
     },
     {
-        id: 'gpt-4o-mini',
-        name: 'GPT-4o Mini',
+        id: 'gpt-4o',
+        name: 'GPT-4o',
         isPremium: false,
         provider: 'openai',
     },
     {
-        id: 'gpt-4o',
-        name: 'GPT-4o',
+        id: 'gpt-4o-mini',
+        name: 'GPT-4o Mini',
         isPremium: false,
         provider: 'openai',
     },
@@ -110,18 +110,6 @@ export const MODELS = [
         provider: 'openai',
     },
     {
-        id: 'o1',
-        name: 'o1',
-        isPremium: true,
-        provider: 'openai',
-    },
-    {
-        id: 'o1-pro',
-        name: 'o1 Pro',
-        isPremium: true,
-        provider: 'openai',
-    },
-    {
         id: 'o3-pro',
         name: 'o3 Pro',
         isPremium: true,
@@ -136,24 +124,6 @@ export const MODELS = [
     {
         id: 'o4-mini',
         name: 'o4 Mini',
-        isPremium: false,
-        provider: 'openai',
-    },
-    {
-        id: 'o3-mini',
-        name: 'o3 Mini',
-        isPremium: false,
-        provider: 'openai',
-    },
-    {
-        id: 'o1-mini',
-        name: 'o1 Mini',
-        isPremium: false,
-        provider: 'openai',
-    },
-    {
-        id: 'chatgpt-4o-latest',
-        name: 'ChatGPT 4o Latest',
         isPremium: false,
         provider: 'openai',
     },

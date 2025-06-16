@@ -1,4 +1,8 @@
+'use client';
+import { apiClient } from '@/lib/client';
+import { useClerk } from '@clerk/nextjs';
 import {
+  Button,
   Menu,
   MenuButton,
   MenuHeading,
@@ -6,29 +10,31 @@ import {
   MenuItems,
   MenuSection,
 } from '@headlessui/react';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, User } from 'lucide-react';
 import Link from 'next/link';
 
-const MENU_ITEMS = [
-  { label: 'Settings', href: '/settings' },
-  { label: 'Feedback', href: '/feedback' },
-  { label: 'Documentation', href: '/docs' },
-  { label: 'Logout', href: '/logout' },
-];
+export function UserMenu() {
+  const { signOut } = useClerk();
 
-const USER_DATA = {
-  name: 'Levi Schad',
-  email: 'levi.schad@icloud.com',
-  plan: 'PRO',
-};
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const res = await apiClient.auth.getUser.$get();
+      return await res.json();
+    },
+  });
 
-export function UserButton() {
+  if (!user) {
+    return null;
+  }
+
   return (
     <Menu>
       <MenuButton className="flex w-full cursor-pointer items-center justify-between rounded-md border border-brand-200 bg-brand-50 px-3 py-4 outline-none transition-colors focus:outline-none">
         <div className="flex items-center gap-2">
           <User className="size-4" />
-          <p className="text-sm">{USER_DATA.email}</p>
+          <p className="text-sm">{user.email}</p>
         </div>
         <ChevronRight className="size-4" />
       </MenuButton>
@@ -39,22 +45,29 @@ export function UserButton() {
       >
         <MenuSection className="flex flex-col gap-1">
           <MenuHeading className="flex cursor-default items-center gap-2 px-2 py-1 font-medium">
-            <span className="text-sm">{USER_DATA.name}</span>
+            <span className="text-sm">{user.name}</span>
             <div className="flex items-center justify-center rounded-md bg-brand px-2 py-1 text-xs">
-              <span className="text-brand-100 text-xs">{USER_DATA.plan}</span>
+              <span className="text-brand-100 text-xs">FREE</span>
             </div>
           </MenuHeading>
 
-          {MENU_ITEMS.map((item) => (
-            <MenuItem key={item.label}>
-              <Link
-                href={item.href}
-                className="block rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
-              >
-                {item.label}
-              </Link>
-            </MenuItem>
-          ))}
+          <MenuItem>
+            <Link
+              href="/settings"
+              className="block rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
+            >
+              Settings
+            </Link>
+          </MenuItem>
+
+          <MenuItem>
+            <Button
+              onClick={() => signOut({ redirectUrl: '/sign-in' })}
+              className="block w-full rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-brand-200"
+            >
+              Logout
+            </Button>
+          </MenuItem>
         </MenuSection>
       </MenuItems>
     </Menu>

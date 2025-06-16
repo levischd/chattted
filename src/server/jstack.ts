@@ -1,5 +1,5 @@
-import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { currentUser } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { type InferMiddlewareOutput, jstack } from 'jstack';
@@ -8,8 +8,7 @@ import { usersTable } from './db/schema';
 interface Env {
     Bindings: {
         DATABASE_URL: string;
-        BETTER_AUTH_SECRET: string;
-        BETTER_AUTH_URL: string;
+        CLERK_SECRET_KEY: string;
         UPSTASH_REDIS_REST_URL: string;
         UPSTASH_REDIS_REST_TOKEN: string;
         GOOGLE_GENERATIVE_AI_API_KEY: string;
@@ -31,43 +30,40 @@ type DatabaseProviderMiddlewareOutput = InferMiddlewareOutput<
     typeof databaseProviderMiddleware
 >;
 
-const authProviderMiddleware = j.middleware(async ({ next }) => {
-    return await next({ auth });
-});
+const authMiddleware = j.middleware(async ({ next }) => {
+    const clerkUser = await currentUser();
 
-type AuthProviderMiddlewareOutput = InferMiddlewareOutput<
-    typeof authProviderMiddleware
->;
-
-const authMiddleware = j.middleware(async ({ c, ctx, next }) => {
-    const { auth, db } = ctx as AuthProviderMiddlewareOutput &
-        DatabaseProviderMiddlewareOutput;
-
-    const session = await auth.api.getSession({
-        headers: c.req.raw.headers,
-    });
-
-    if (!session) {
+    if (!clerkUser) {
         throw new HTTPException(401, { message: 'Unauthorized' });
     }
 
-    const [user] = await db
+    let [dbUser] = await db
         .select()
         .from(usersTable)
-        .where(eq(usersTable.id, session.user.id));
+        .where(eq(usersTable.externalId, clerkUser.id));
 
-    if (!user) {
-        throw new HTTPException(401, { message: 'Unauthorized' });
+    if (!dbUser) {
+        const [newDbUser] = await db
+            .insert(usersTable)
+            .values({
+                externalId: clerkUser.id,
+                email: clerkUser.emailAddresses[0]?.emailAddress || '',
+                name: clerkUser.fullName || clerkUser.firstName || '',
+            })
+            .returning();
+
+        if (!newDbUser) {
+            throw new HTTPException(500, { message: 'Failed to create user' });
+        }
+
+        dbUser = newDbUser;
     }
 
-    return await next({ user });
+    return await next({ user: dbUser });
 });
 
-export const publicProcedure = j.procedure
-    .use(databaseProviderMiddleware)
-    .use(authProviderMiddleware);
+export const publicProcedure = j.procedure.use(databaseProviderMiddleware);
 
 export const privateProcedure = j.procedure
     .use(databaseProviderMiddleware)
-    .use(authProviderMiddleware)
     .use(authMiddleware);

@@ -1,18 +1,15 @@
 import { Chat } from '@/components/chat';
-import { auth } from '@/lib/auth';
 import { DEFAULT_LLM_MODEL_ID } from '@/lib/config/models';
-import { headers } from 'next/headers';
+import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { v4 as uuid } from 'uuid';
 
 export default async function Page() {
   const id = uuid();
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const user = await currentUser();
 
-  if (!session) {
+  if (!user) {
     return redirect('/sign-in');
   }
 

@@ -12,7 +12,7 @@ import {
 import { useState } from 'react';
 import { useAppState } from '../states/app-state';
 import { ChatHistory } from './chat-history';
-import { UserButton } from './user-button';
+import { UserMenu } from './user-menu';
 
 export function SidebarLeft() {
   const { isLeftSidebarOpen } = useAppState();
@@ -66,7 +66,7 @@ export function SidebarLeft() {
       </div>
 
       <div className="mt-auto">
-        <UserButton />
+        <UserMenu />
       </div>
     </div>
   );

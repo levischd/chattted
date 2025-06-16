@@ -1,8 +1,7 @@
 import { Header } from '@/components/header';
 import { SidebarLeft } from '@/components/sidebar-left';
 import { SidebarRight } from '@/components/sidebar-right';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import type React from 'react';
 
@@ -11,13 +10,9 @@ interface ChatLayoutProps {
 }
 
 export default async function ChatLayout({ children }: ChatLayoutProps) {
-  const nextHeaders = await headers();
+  const user = await currentUser();
 
-  const session = await auth.api.getSession({
-    headers: nextHeaders,
-  });
-
-  if (!session) {
+  if (!user) {
     return redirect('/sign-in');
   }
 
