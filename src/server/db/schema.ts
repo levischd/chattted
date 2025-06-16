@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
     boolean,
     index,
@@ -15,7 +16,7 @@ import {
     createSelectSchema,
     createUpdateSchema,
 } from 'drizzle-zod';
-import { nanoid } from 'nanoid';
+import { v4 as uuid } from 'uuid';
 
 export const planEnum = pgEnum('plan', ['free', 'pro']);
 export const roleEnum = pgEnum('role', ['user', 'assistant', 'system']);
@@ -80,7 +81,7 @@ export const verificationsTable = pgTable('verifications', {
 export const usersTable = pgTable('users', {
     id: varchar('id', { length: 191 })
         .primaryKey()
-        .$defaultFn(() => nanoid()),
+        .$defaultFn(() => uuid()),
     email: varchar('email', { length: 255 }).notNull().unique(),
     emailVerified: boolean('email_verified').default(false).notNull(),
     image: varchar('image', { length: 255 }),
@@ -93,7 +94,7 @@ export const usersTable = pgTable('users', {
 export const quotasTable = pgTable('quotas', {
     id: varchar('id', { length: 191 })
         .primaryKey()
-        .$defaultFn(() => nanoid()),
+        .$defaultFn(() => uuid()),
     year: integer('year').notNull(),
     month: integer('month').notNull(),
     outputTokens: integer('output_tokens').notNull().default(0),
@@ -109,20 +110,26 @@ export const conversationsTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         userId: varchar('user_id', { length: 191 })
             .references(() => usersTable.id, { onDelete: 'cascade' })
             .notNull(),
-        title: varchar('title', { length: 255 }).default('New Conversation'),
+        title: varchar('title', { length: 255 })
+            .default('New Conversation')
+            .notNull(),
         modelId: varchar('model_id', { length: 255 }).notNull(),
-        isPinned: boolean('is_pinned').default(false),
-        isActive: boolean('is_active').default(true),
+        isPinned: boolean('is_pinned').default(false).notNull(),
         createdAt: timestamp('created_at').defaultNow().notNull(),
         updatedAt: timestamp('updated_at').defaultNow().notNull(),
     },
     (table) => [
         index('conversations_user_id_idx').on(table.userId),
         index('conversations_created_at_idx').on(table.createdAt),
+        // Fulltext search index für Titel (sprachunabhängig)
+        index('conversations_title_search_idx').using(
+            'gin',
+            sql`to_tsvector('simple', ${table.title})`
+        ),
     ]
 );
 
@@ -131,7 +138,7 @@ export const messagesTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         conversationId: varchar('conversation_id', { length: 191 })
             .references(() => conversationsTable.id, { onDelete: 'cascade' })
             .notNull(),
@@ -160,6 +167,11 @@ export const messagesTable = pgTable(
     (table) => [
         index('messages_conversation_id_idx').on(table.conversationId),
         index('messages_created_at_idx').on(table.createdAt),
+        // Fulltext search index für Message Content (sprachunabhängig)
+        index('messages_content_search_idx').using(
+            'gin',
+            sql`to_tsvector('simple', ${table.content})`
+        ),
     ]
 );
 
@@ -168,7 +180,7 @@ export const messagePartsTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         messageId: varchar('message_id', { length: 191 })
             .references(() => messagesTable.id, { onDelete: 'cascade' })
             .notNull(),
@@ -189,7 +201,7 @@ export const attachmentsTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         messageId: varchar('message_id', { length: 191 })
             .references(() => messagesTable.id, { onDelete: 'cascade' })
             .notNull(),
@@ -207,7 +219,7 @@ export const attachmentsTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         conversationId: varchar('conversation_id', { length: 191 }).references(
             () => conversations.id,
             { onDelete: 'cascade' }
@@ -235,7 +247,7 @@ export const attachmentsTable = pgTable(
 export const toolsTable = pgTable('tools', {
     id: varchar('id', { length: 191 })
         .primaryKey()
-        .$defaultFn(() => nanoid()),
+        .$defaultFn(() => uuid()),
     name: varchar('name', { length: 255 }).notNull().unique(),
     description: text('description'),
     parameters: json('parameters').$type<Record<string, unknown>>().notNull(),
@@ -250,7 +262,7 @@ export const toolExecutionsTable = pgTable(
     {
         id: varchar('id', { length: 191 })
             .primaryKey()
-            .$defaultFn(() => nanoid()),
+            .$defaultFn(() => uuid()),
         messageId: varchar('message_id', { length: 191 })
             .references(() => messagesTable.id, { onDelete: 'cascade' })
             .notNull(),
@@ -305,7 +317,6 @@ export const messagesRelations = relations(messagesTable, ({ one, many }) => ({
         fields: [messagesTable.conversationId],
         references: [conversationsTable.id],
     }),
-    childMessages: many(messagesTable),
     messageParts: many(messagePartsTable),
     attachments: many(attachmentsTable),
     //embeddings: many(embeddings),

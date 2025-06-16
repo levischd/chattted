@@ -1,21 +1,30 @@
-import { ArrowUp } from 'lucide-react';
-import type React from 'react';
+import type { UseChatHelpers } from '@ai-sdk/react';
+import { Button } from '@headlessui/react';
+import { ArrowUp, Square } from 'lucide-react';
 
 export function SubmitButton({
-  onClick,
-  disabled,
+  handleSubmit,
+  handleStop,
+  status,
 }: {
-  onClick: (e: React.FormEvent<HTMLButtonElement>) => void;
-  disabled: boolean;
+  handleSubmit: UseChatHelpers['handleSubmit'];
+  handleStop: UseChatHelpers['stop'];
+  status: UseChatHelpers['status'];
 }) {
   return (
-    <button
+    <Button
       type="submit"
-      onClick={onClick}
-      disabled={disabled}
+      onClick={
+        status === 'ready' || status === 'error' ? handleSubmit : handleStop
+      }
+      disabled={status === 'submitted'}
       className="cursor-pointer rounded-full border border-brand-800 bg-brand-800 p-2 transition-colors hover:border-brand-700 hover:bg-brand-700"
     >
-      <ArrowUp className="size-4 text-brand-100" />
-    </button>
+      {status === 'ready' || status === 'error' ? (
+        <ArrowUp className="size-4 text-brand-100" />
+      ) : (
+        <Square className="size-4 text-brand-100" />
+      )}
+    </Button>
   );
 }

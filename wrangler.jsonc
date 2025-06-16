@@ -1,7 +1,11 @@
 {
   "name": "jstack-app",
   "main": "src/server/index.ts",
-  "compatibility_date": "2025-02-14",
+  "compatibility_date": "2025-06-16",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env"
+  ],
   "observability": {
     "enabled": true
   },

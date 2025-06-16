@@ -6,7 +6,8 @@ import equal from 'fast-deep-equal';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
 import { memo } from 'react';
-import { Message, ThinkingMessage } from './message';
+import { Message } from './message';
+import { ThinkingMessage } from './thinking-message';
 
 function NonMemoizedMessages({
   conversationId,
@@ -43,6 +44,7 @@ function NonMemoizedMessages({
           {messages.map((message) => (
             <Message
               key={message.id}
+              conversationId={conversationId}
               message={message}
               reload={reload}
               setMessages={setMessages}

@@ -40,6 +40,7 @@ Requirements:
 - Be specific and informative (avoid generic phrases like "Help with..." or "Question about...")
 - Use clear, professional language
 - Do not include quotation marks or special formatting
+- Generate a title in the language of the conversation
 
 Conversation:
 ${conversationText}

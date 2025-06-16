@@ -2,21 +2,30 @@
 
 import { apiClient } from '@/lib/client';
 import type { Conversation } from '@/server/db/schema';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Input } from '@headlessui/react';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useState } from 'react';
 import { useAppState } from '../states/app-state';
 import { ChatHistory } from './chat-history';
 import { UserButton } from './user-button';
 
 export function SidebarLeft() {
   const { isLeftSidebarOpen } = useAppState();
-
+  const [query, setQuery] = useState('');
   const { data: conversations } = useQuery<Conversation[]>({
-    initialData: [],
-    queryKey: ['conversations'],
+    queryKey: ['conversations', query],
     queryFn: async () => {
-      const res = await apiClient.chat.getConversations.$get();
+      const res = await apiClient.chat.getConversations.$get({
+        search: query,
+      });
       return await res.json();
     },
+    placeholderData: keepPreviousData,
   });
 
   const queryClient = useQueryClient();
@@ -42,14 +51,16 @@ export function SidebarLeft() {
 
   return (
     <div className="flex h-full w-72 shrink-0 flex-col gap-4 overflow-hidden border-brand-200 border-r bg-brand-100 p-4">
-      <input
+      <Input
         type="text"
         placeholder="Search"
         className="w-full resize-none rounded-md border border-brand-200 bg-brand-50 p-2 text-sm outline-none placeholder:text-brand-500"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
       />
       <div className="flex flex-col gap-1 overflow-y-auto">
         <ChatHistory
-          conversations={conversations}
+          conversations={conversations ?? []}
           onDeleteConversation={handleDeleteConversation}
         />
       </div>

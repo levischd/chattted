@@ -29,11 +29,11 @@ export function Chat({ id, initialMessages, initialModelId }: ChatProps) {
     handleSubmit: _handleSubmit,
     reload,
     status,
+    stop,
   } = useChat({
     id,
     api: '/api/completions/create',
     initialMessages,
-    experimental_throttle: 100,
     experimental_prepareRequestBody: (options) => {
       return {
         ...options,
@@ -75,11 +75,14 @@ export function Chat({ id, initialMessages, initialModelId }: ChatProps) {
       )}
       <div className="flex w-full justify-center">
         <ChatInput
+          status={status}
           input={input}
           modelId={modelId}
+          setInput={setInput}
           setModelId={setModelId}
-          onChange={handleInputChange}
-          onSubmit={handleSubmit}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          stop={stop}
         />
       </div>
     </div>
