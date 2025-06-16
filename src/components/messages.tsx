@@ -44,6 +44,7 @@ function NonMemoizedMessages({
           {messages.map((message) => (
             <Message
               key={message.id}
+              status={status}
               conversationId={conversationId}
               message={message}
               reload={reload}

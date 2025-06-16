@@ -1,3 +1,4 @@
+import type { UIMessage } from 'ai';
 import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import {
@@ -100,6 +101,7 @@ export const messagesTable = pgTable(
             .notNull(),
         role: roleEnum('role').notNull(),
         content: text('content').notNull(),
+        parts: json('parts').$type<UIMessage['parts']>(),
         status: messageStatusEnum('status').default('completed').notNull(),
         metadata: json('metadata').$type<{
             duration?: number;
@@ -142,6 +144,7 @@ export const messagePartsTable = pgTable(
             .notNull(),
         type: contentTypeEnum('type').notNull(),
         content: text('content'),
+        parts: json('parts').$type<UIMessage['parts'][]>(),
         toolCallId: varchar('tool_call_id', { length: 191 }),
         toolName: varchar('tool_name', { length: 255 }),
         toolArgs: json('tool_args').$type<Record<string, unknown>>(),

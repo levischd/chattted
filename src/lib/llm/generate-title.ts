@@ -1,23 +1,17 @@
-import { generateObject } from 'ai';
+import { type LanguageModel, generateObject } from 'ai';
 import { z } from 'zod';
-import type { ModelId } from '../config/models';
-import { type ProviderId, createProviderInstance } from '../config/providers';
 
 const titleSchema = z.object({
     title: z.string(),
 });
 
 export const generateTitle = async (
-    providerId: ProviderId,
-    modelId: ModelId,
+    model: LanguageModel,
     messages: {
         role: 'user' | 'assistant' | 'system';
         content: string;
     }[]
 ) => {
-    const provider = createProviderInstance(providerId);
-    const model = provider(modelId);
-
     const relevantMessages = messages.slice(0, 6);
     const conversationText = relevantMessages
         .map((message) => {

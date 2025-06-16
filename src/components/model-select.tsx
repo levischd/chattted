@@ -1,6 +1,6 @@
 'use client';
 
-import { MODELS } from '@/lib/config/models';
+import { models } from '@/lib/config/models';
 import type { ModelId } from '@/lib/config/models';
 import { PROVIDERS } from '@/lib/config/providers';
 import {
@@ -18,17 +18,24 @@ interface ModelSelectProps {
 }
 
 export function ModelSelect({ modelId, setModelId }: ModelSelectProps) {
-  const selectedModel = MODELS.find((model) => model.id === modelId);
+  const selectedModel = models[modelId];
 
   const groupedModels = PROVIDERS.map((provider) => ({
     provider,
-    models: MODELS.filter((model) => model.provider === provider.id),
+    models: Object.values(models).filter(
+      (model) => model.provider === provider.id
+    ),
   })).filter((group) => group.models.length > 0);
 
   return (
     <Listbox
       value={selectedModel}
-      onChange={(model) => model && setModelId(model.id)}
+      onChange={(model) =>
+        model &&
+        setModelId(
+          Object.keys(models)[Object.values(models).indexOf(model)] as ModelId
+        )
+      }
       as={Fragment}
     >
       <ListboxButton
@@ -50,20 +57,25 @@ export function ModelSelect({ modelId, setModelId }: ModelSelectProps) {
             <div className="px-2 py-1 font-medium text-sm">
               {group.provider.name}
             </div>
-            {group.models.map((model) => (
-              <ListboxOption
-                key={model.id}
-                value={model}
-                className="flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
-              >
-                <span>{model.name}</span>
-                {model.isPremium && (
-                  <div className="flex items-center justify-center rounded-md bg-brand px-2 py-1 text-xs">
-                    <span className="text-brand-100 text-xs">PRO</span>
-                  </div>
-                )}
-              </ListboxOption>
-            ))}
+            {group.models.map((model) => {
+              const modelId = Object.keys(models).find(
+                (key) => models[key as ModelId] === model
+              ) as ModelId;
+              return (
+                <ListboxOption
+                  key={modelId}
+                  value={model}
+                  className="flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
+                >
+                  <span>{model.name}</span>
+                  {model.isPremium && (
+                    <div className="flex items-center justify-center rounded-md bg-brand px-2 py-1 text-xs">
+                      <span className="text-brand-100 text-xs">PRO</span>
+                    </div>
+                  )}
+                </ListboxOption>
+              );
+            })}
           </Fragment>
         ))}
       </ListboxOptions>

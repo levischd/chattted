@@ -3,14 +3,16 @@
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
 import { Bot } from 'lucide-react';
-import { memo, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 
 import { useCreateBranch } from '@/hooks/use-create-branch';
 import { useMessageActions } from '@/hooks/use-message-actions';
-import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
+import { ReasoningMessagePart } from './reasoning-message-part';
+import { TextMessagePart } from './text-message-part';
 
 interface AssistantMessageProps {
+  status: UseChatHelpers['status'];
   conversationId: string;
   message: UIMessage;
   reload: UseChatHelpers['reload'];
@@ -18,6 +20,7 @@ interface AssistantMessageProps {
 }
 
 function AssistantMessageComponent({
+  status,
   conversationId,
   message,
   reload,
@@ -42,9 +45,28 @@ function AssistantMessageComponent({
         <Bot className="size-4 text-brand-900" />
       </div>
 
-      <div className="mt-1 flex w-full flex-col gap-4 overflow-hidden text-md">
-        <Markdown>{message.content}</Markdown>
-
+      <div className="flex flex-col gap-2">
+        {message.parts
+          .sort((a, b) => {
+            if (a.type === 'reasoning') {
+              return -1;
+            }
+            return 1;
+          })
+          .map((part, index) => (
+            <React.Fragment key={index}>
+              {(() => {
+                switch (part.type) {
+                  case 'text':
+                    return <TextMessagePart part={part} />;
+                  case 'reasoning':
+                    return <ReasoningMessagePart status={status} part={part} />;
+                  default:
+                    return null;
+                }
+              })()}
+            </React.Fragment>
+          ))}
         <div className="flex items-center justify-between">
           <MessageActions
             onCopy={handleCopy}
@@ -52,7 +74,6 @@ function AssistantMessageComponent({
             onSplit={handleSplit}
             onDelete={handleDelete}
           />
-
           <span
             className="text-brand-500 text-xs opacity-0 transition-opacity group-hover:opacity-100"
             suppressHydrationWarning

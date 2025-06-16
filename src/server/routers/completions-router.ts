@@ -1,11 +1,11 @@
 import {
     DEFAULT_TITLE_MODEL_ID,
-    MODELS,
     type ModelId,
+    aiProvider,
+    models,
 } from '@/lib/config/models';
-import { createProviderInstance } from '@/lib/config/providers';
 import { generateTitle } from '@/lib/llm/generate-title';
-import { smoothStream, streamText } from 'ai';
+import { appendResponseMessages, smoothStream, streamText } from 'ai';
 import { eq } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
@@ -24,9 +24,7 @@ export const completionsRouter = j.router({
                         content: z.string(),
                     })
                 ),
-                modelId: z.enum(
-                    MODELS.map((model) => model.id) as [ModelId, ...ModelId[]]
-                ),
+                modelId: z.enum(Object.keys(models) as [ModelId, ...ModelId[]]),
             })
         )
         .mutation(async ({ ctx, input, c }) => {
@@ -34,16 +32,14 @@ export const completionsRouter = j.router({
             const { id, messages: inputMessages, modelId } = input;
 
             // Validate model and provider upfront
-            const model = MODELS.find((m) => m.id === modelId);
+            const model = models[modelId];
             if (!model || !model.provider) {
                 throw new HTTPException(400, {
                     message: 'Invalid model ID',
                 });
             }
-            const titleProvider = MODELS.find(
-                (model) => model.id === DEFAULT_TITLE_MODEL_ID
-            )?.provider;
-            const llmProvider = createProviderInstance(model.provider);
+            const titleProvider = models[DEFAULT_TITLE_MODEL_ID].provider;
+            const llmProvider = model.provider;
 
             if (!titleProvider) {
                 throw new HTTPException(400, {
@@ -167,8 +163,7 @@ export const completionsRouter = j.router({
             if (inputMessages.length === 1) {
                 try {
                     const title = await generateTitle(
-                        titleProvider,
-                        DEFAULT_TITLE_MODEL_ID,
+                        aiProvider.languageModel(DEFAULT_TITLE_MODEL_ID),
                         inputMessages
                     );
 
@@ -183,24 +178,35 @@ export const completionsRouter = j.router({
 
             // Prepare messages for the model
             const coreMessages = inputMessages.map((message) => ({
+                id: message.id,
                 role: message.role,
                 content: message.content,
             }));
 
-            // Stream the response
             let finalContent = '';
-
             const result = streamText({
-                model: llmProvider(modelId),
+                model: aiProvider.languageModel(modelId),
                 messages: coreMessages,
                 experimental_transform: smoothStream({ chunking: 'word' }),
-                onFinish: async ({ text, finishReason, usage }) => {
-                    console.log('onFinish', text);
+                onFinish: async ({ response }) => {
+                    const [, assistantMessage] = appendResponseMessages({
+                        messages: coreMessages.map((message) => ({
+                            id: message.id,
+                            role: message.role,
+                            content: message.content,
+                        })),
+                        responseMessages: response.messages,
+                    });
+                    if (!assistantMessage) {
+                        return;
+                    }
+                    console.log('onFinish', assistantMessage);
                     try {
                         await db.insert(messagesTable).values({
                             conversationId: id,
                             role: 'assistant',
-                            content: text,
+                            content: assistantMessage.content,
+                            parts: assistantMessage.parts,
                         });
                     } catch (error) {
                         console.error(
@@ -228,6 +234,15 @@ export const completionsRouter = j.router({
                 });
             });
 
-            return result.toDataStreamResponse();
+            result.consumeStream();
+
+            return result.toDataStreamResponse({
+                sendReasoning: true,
+                sendUsage: true,
+                sendSources: true,
+                getErrorMessage: () => {
+                    return 'An error occurred, please try again!';
+                },
+            });
         }),
 });

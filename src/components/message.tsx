@@ -9,6 +9,7 @@ import { AssistantMessage } from './assistant-message';
 import { UserMessage } from './user-message';
 
 interface MessageProps {
+  status: UseChatHelpers['status'];
   conversationId: string;
   setMessages: UseChatHelpers['setMessages'];
   message: UIMessage;
@@ -16,6 +17,7 @@ interface MessageProps {
 }
 
 function MessageComponent({
+  status,
   conversationId,
   setMessages,
   message,
@@ -30,6 +32,7 @@ function MessageComponent({
     />
   ) : (
     <AssistantMessage
+      status={status}
       conversationId={conversationId}
       message={message}
       reload={reload}
