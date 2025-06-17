@@ -67,7 +67,12 @@ export const chatRouter = j.router({
                     messagesTable,
                     eq(conversationsTable.id, messagesTable.conversationId)
                 )
-                .where(eq(conversationsTable.id, input.id))
+                .where(
+                    and(
+                        eq(conversationsTable.id, input.id),
+                        eq(conversationsTable.userId, ctx.user.id)
+                    )
+                )
                 .orderBy(asc(messagesTable.updatedAt));
 
             const conversation = results[0]?.conversations;

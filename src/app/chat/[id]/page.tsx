@@ -28,6 +28,7 @@ export default async function Page({ params }: ChatPageProps) {
   });
 
   if (err) {
+    console.error(err);
     return redirect('/chat/new');
   }
 
