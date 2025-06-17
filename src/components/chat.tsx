@@ -1,27 +1,45 @@
 'use client';
 
-import type { ModelId } from '@/lib/config/models';
+import { apiClient } from '@/lib/client';
+import { DEFAULT_LLM_MODEL_ID, type ModelId } from '@/lib/config/models';
 import { type UseChatHelpers, useChat } from '@ai-sdk/react';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Message } from 'ai';
-import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ChatGreeting } from './chat-greeting';
 import { ChatInput } from './chat-input';
+import { ChatLoading } from './chat-loading';
 import { Messages } from './messages';
 
 interface ChatProps {
   id: string;
-  initialMessages: Message[];
-  initialModelId: ModelId;
+  isDraft: boolean;
 }
 
-export function Chat({ id, initialMessages, initialModelId }: ChatProps) {
-  const [modelId, setModelId] = useState<ModelId>(initialModelId);
-
+export function Chat({ id, isDraft }: ChatProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Fetch conversation data with useQuery
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['conversation', id],
+    queryFn: async () => {
+      const res = await apiClient.chat.getConversation.$get({ id });
+      return await res.json();
+    },
+    enabled: !isDraft,
+  });
+
+  // Determine initial values based on data or defaults
+  const { conversation, messages } = data || {};
+  const initialMessages = messages || [];
+  const initialModelId =
+    (conversation?.modelId as ModelId) || DEFAULT_LLM_MODEL_ID;
+
+  const [modelId, setModelId] = useState<ModelId>(initialModelId);
+
   const {
-    messages,
+    messages: chatMessages,
     setMessages,
     input,
     setInput,
@@ -47,6 +65,33 @@ export function Chat({ id, initialMessages, initialModelId }: ChatProps) {
     },
   });
 
+  // Handle errors with useEffect to avoid conditional returns after hooks
+  useEffect(() => {
+    if (error) {
+      if ('status' in error) {
+        const status = (error as unknown as { status: number }).status;
+        if (status === 401) {
+          router.push('/sign-in');
+          return;
+        }
+        if (status === 403 || status === 400) {
+          router.push('/chat/new');
+          return;
+        }
+        // For 404 (conversation not found), treat as new conversation - no redirect needed
+        if (status !== 404) {
+          // For other errors, redirect to new chat
+          router.push('/chat/new');
+          return;
+        }
+      } else {
+        // For other errors, redirect to new chat
+        router.push('/chat/new');
+        return;
+      }
+    }
+  }, [error, router]);
+
   const handleSubmit: UseChatHelpers['handleSubmit'] = (
     event,
     chatRequestOptions
@@ -60,15 +105,20 @@ export function Chat({ id, initialMessages, initialModelId }: ChatProps) {
     });
   };
 
+  // Show loading state (but not for 404 errors which indicate new conversation)
+  if (isLoading && !error) {
+    return <ChatLoading />;
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-grow flex-col gap-4 overflow-hidden px-10">
-      {messages.length === 0 ? (
+      {chatMessages.length === 0 ? (
         <ChatGreeting />
       ) : (
         <Messages
           reload={reload}
           conversationId={id}
-          messages={messages}
+          messages={chatMessages}
           status={status}
           setMessages={setMessages}
         />

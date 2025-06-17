@@ -1,9 +1,6 @@
 import { Chat } from '@/components/chat';
-import { apiClient } from '@/lib/client';
-import type { ModelId } from '@/lib/config/models';
-import { tryCatch } from '@/lib/error/try-catch';
-import { HTTPException } from 'hono/http-exception';
-import { notFound, redirect } from 'next/navigation';
+import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 interface ChatPageProps {
   params: Promise<{
@@ -14,38 +11,11 @@ interface ChatPageProps {
 export default async function Page({ params }: ChatPageProps) {
   const { id } = await params;
 
-  const [result, err] = await tryCatch(async () => {
-    const res = await apiClient.chat.getConversation.$get({
-      id,
-    });
-    return await res.json();
-  });
+  const user = await currentUser();
 
-  if (err) {
-    if (err instanceof HTTPException) {
-      if (err.status === 404) {
-        return notFound();
-      }
-      if (err.status === 401) {
-        return redirect('/sign-in');
-      }
-      if (err.status === 403) {
-        return redirect('/chat/new');
-      }
-      if (err.status === 400) {
-        return redirect('/chat/new');
-      }
-    }
-    return notFound();
+  if (!user) {
+    return redirect('/sign-in');
   }
 
-  const { conversation, messages } = result;
-
-  return (
-    <Chat
-      id={id}
-      initialMessages={messages}
-      initialModelId={conversation.modelId as ModelId}
-    />
-  );
+  return <Chat id={id} isDraft={false} />;
 }
