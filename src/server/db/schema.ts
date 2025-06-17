@@ -101,7 +101,10 @@ export const messagesTable = pgTable(
             .notNull(),
         role: roleEnum('role').notNull(),
         content: text('content').notNull(),
-        parts: json('parts').$type<UIMessage['parts']>(),
+        parts: json('parts')
+            .$type<UIMessage['parts']>()
+            .notNull()
+            .$defaultFn(() => []),
         status: messageStatusEnum('status').default('completed').notNull(),
         metadata: json('metadata').$type<{
             duration?: number;
