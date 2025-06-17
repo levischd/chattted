@@ -13,13 +13,11 @@ export function ReasoningMessagePart({
   part: ReasoningUIPart;
   status: UseChatHelpers['status'];
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     if (status === 'error' || status === 'ready') {
       setIsExpanded(false);
-    } else {
-      setIsExpanded(true);
     }
   }, [status]);
 
