@@ -8,6 +8,9 @@ import {
 } from '@tanstack/react-query';
 import { type PropsWithChildren, useState } from 'react';
 
+// 12 Stunden in Millisekunden
+const TWELVE_HOURS_IN_MS = 1000 * 60 * 60 * 12;
+
 export const Providers = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(
     () =>
@@ -17,6 +20,12 @@ export const Providers = ({ children }: PropsWithChildren) => {
             handleError('Error', err);
           },
         }),
+        defaultOptions: {
+          queries: {
+            staleTime: TWELVE_HOURS_IN_MS,
+            gcTime: TWELVE_HOURS_IN_MS,
+          },
+        },
       })
   );
 
