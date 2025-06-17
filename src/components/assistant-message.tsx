@@ -60,7 +60,9 @@ function AssistantMessageComponent({
                   case 'text':
                     return <TextMessagePart part={part} />;
                   case 'reasoning':
-                    return <ReasoningMessagePart status={status} part={part} />;
+                    return part.reasoning.trim().length > 0 ? (
+                      <ReasoningMessagePart status={status} part={part} />
+                    ) : null;
                   default:
                     return null;
                 }
