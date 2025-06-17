@@ -45,7 +45,7 @@ function AssistantMessageComponent({
         <Bot className="size-4 text-brand-900" />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex w-full flex-col gap-2">
         {message.parts
           .sort((a, b) => {
             if (a.type === 'reasoning') {

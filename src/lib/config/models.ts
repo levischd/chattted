@@ -17,7 +17,20 @@ export const aiProvider = customProvider({
         'gemini-2.5-flash-preview-05-20': google(
             'gemini-2.5-flash-preview-05-20'
         ),
-        'gemini-2.5-pro-preview-06-05': google('gemini-2.5-pro-preview-06-05'),
+        'gemini-2.5-pro-preview-06-05': wrapLanguageModel({
+            middleware: defaultSettingsMiddleware({
+                settings: {
+                    providerMetadata: {
+                        google: {
+                            thinkingConfig: {
+                                includeThoughts: true,
+                            },
+                        },
+                    },
+                },
+            }),
+            model: google('gemini-2.5-pro-preview-06-05'),
+        }),
 
         // Groq models
         'deepseek-r1-distill-llama-70b': wrapLanguageModel({
@@ -75,20 +88,41 @@ export const aiProvider = customProvider({
         'gpt-4.1-nano': openai('gpt-4.1-nano'),
         'gpt-4.5-preview': openai('gpt-4.5-preview'),
         'o3-pro': wrapLanguageModel({
-            middleware: extractReasoningMiddleware({
-                tagName: 'think',
+            middleware: defaultSettingsMiddleware({
+                settings: {
+                    providerMetadata: {
+                        openai: {
+                            reasoningSummary: 'detailed',
+                            reasoningEffort: 'high',
+                        },
+                    },
+                },
             }),
             model: openai('o3-pro'),
         }),
         o3: wrapLanguageModel({
-            middleware: extractReasoningMiddleware({
-                tagName: 'think',
+            middleware: defaultSettingsMiddleware({
+                settings: {
+                    providerMetadata: {
+                        openai: {
+                            reasoningSummary: 'detailed',
+                            reasoningEffort: 'high',
+                        },
+                    },
+                },
             }),
             model: openai('o3'),
         }),
         'o4-mini': wrapLanguageModel({
-            middleware: extractReasoningMiddleware({
-                tagName: 'think',
+            middleware: defaultSettingsMiddleware({
+                settings: {
+                    providerMetadata: {
+                        openai: {
+                            reasoningSummary: 'detailed',
+                            reasoningEffort: 'high',
+                        },
+                    },
+                },
             }),
             model: openai('o4-mini'),
         }),

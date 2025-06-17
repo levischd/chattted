@@ -47,7 +47,7 @@ export function ReasoningMessagePart({
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="border-gray-200 border-l px-4 text-brand-600 text-sm">
+            <div className="overflow-hidden border-gray-200 border-l px-4 text-brand-600 text-sm">
               <Markdown>{part.reasoning}</Markdown>
             </div>
           </motion.div>
