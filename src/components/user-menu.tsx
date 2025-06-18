@@ -53,8 +53,8 @@ export function UserMenu() {
 
           <MenuItem>
             <Link
-              href="/settings"
-              className="block rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
+              href="#"
+              className="block cursor-not-allowed rounded-md px-2 py-1 text-sm transition-colors hover:bg-brand-200"
             >
               Settings
             </Link>

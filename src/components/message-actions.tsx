@@ -57,7 +57,7 @@ export function MessageActions({
 
       <Button
         onClick={onDelete}
-        className="cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-brand-200"
+        className="cursor-not-allowed rounded-lg p-1.5 transition-colors hover:bg-brand-200"
       >
         <Ellipsis className="size-4 text-brand-800" />
       </Button>

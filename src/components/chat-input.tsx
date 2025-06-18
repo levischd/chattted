@@ -1,4 +1,4 @@
-import type { ModelId } from '@/lib/config/models';
+import { type ModelId, models } from '@/lib/config/models';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { Textarea } from '@headlessui/react';
 import { Ellipsis, Globe, Lightbulb, Paperclip } from 'lucide-react';
@@ -36,6 +36,8 @@ export function ChatInput({
     }
   };
 
+  const model = models[modelId];
+
   return (
     <div className="mb-4 w-full rounded-2xl border border-brand-300 bg-brand-50 p-4">
       <Textarea
@@ -49,16 +51,16 @@ export function ChatInput({
       />
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <div className="cursor-pointer rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
+          <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Paperclip className="size-4 text-brand-800" />
           </div>
-          <div className="cursor-pointer rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
+          <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Globe className="size-4 text-brand-800" />
           </div>
-          <div className="cursor-pointer rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
+          <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Lightbulb className="size-4 text-brand-800" />
           </div>
-          <div className="cursor-pointer rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
+          <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Ellipsis className="size-4 text-brand-800" />
           </div>
         </div>

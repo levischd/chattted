@@ -43,13 +43,13 @@ export function Header() {
           <SquarePen className="size-5 text-brand-700" />
         </Link>
 
-        <Button className="cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-brand-200">
+        <Button className="cursor-not-allowed rounded-lg p-1.5 transition-colors hover:bg-brand-200">
           <Share className="size-5 text-brand-700" />
         </Button>
 
         <Button
-          className="cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-brand-200"
-          onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+          className="cursor-not-allowed rounded-lg p-1.5 transition-colors hover:bg-brand-200"
+          // onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
         >
           {isRightSidebarOpen ? (
             <PanelRightClose className="size-5 text-brand-700" />
