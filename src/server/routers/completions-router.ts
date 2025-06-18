@@ -9,6 +9,7 @@ import { appendResponseMessages, smoothStream, streamText } from 'ai';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import * as completionsActions from '../actions/completions-actions';
+import { messageInsertSchema } from '../db/schema';
 import { j, privateProcedure } from '../jstack';
 
 export const completionsRouter = j.router({
@@ -17,10 +18,36 @@ export const completionsRouter = j.router({
             z.object({
                 id: z.string(),
                 messages: z.array(
-                    z.object({
-                        id: z.string(),
-                        role: z.enum(['user', 'assistant']),
-                        content: z.string(),
+                    messageInsertSchema.extend({
+                        conversationId: z.string().optional(),
+                        createdAt: z
+                            .union([z.date(), z.string()])
+                            .transform((val) => {
+                                if (val instanceof Date) {
+                                    return Number.isNaN(val.getTime())
+                                        ? new Date()
+                                        : val;
+                                }
+                                const parsed = new Date(val);
+                                return Number.isNaN(parsed.getTime())
+                                    ? new Date()
+                                    : parsed;
+                            })
+                            .optional(),
+                        updatedAt: z
+                            .union([z.date(), z.string()])
+                            .transform((val) => {
+                                if (val instanceof Date) {
+                                    return Number.isNaN(val.getTime())
+                                        ? new Date()
+                                        : val;
+                                }
+                                const parsed = new Date(val);
+                                return Number.isNaN(parsed.getTime())
+                                    ? new Date()
+                                    : parsed;
+                            })
+                            .optional(),
                     })
                 ),
                 attachments: z.array(
@@ -76,13 +103,13 @@ export const completionsRouter = j.router({
                 );
             }
 
-            // Sync messages
             try {
                 await completionsActions.syncMessages(
                     db,
                     id,
                     inputMessages.map((message) => ({
                         ...message,
+                        parts: message.parts ?? [],
                         conversationId: id,
                     }))
                 );
@@ -117,7 +144,7 @@ export const completionsRouter = j.router({
                 onFinish: async ({ response }) => {
                     const messages = appendResponseMessages({
                         messages: coreMessages.map((message) => ({
-                            id: message.id,
+                            id: message.id ?? '',
                             role: message.role,
                             content: message.content,
                         })),
