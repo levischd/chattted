@@ -7,6 +7,7 @@ import {
 import { generateTitle } from '@/lib/llm/generate-title';
 import { appendResponseMessages, smoothStream, streamText } from 'ai';
 import { HTTPException } from 'hono/http-exception';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import * as completionsActions from '../actions/completions-actions';
 import { messageInsertSchema } from '../db/schema';
@@ -135,6 +136,7 @@ export const completionsRouter = j.router({
             const result = streamText({
                 model: aiProvider.languageModel(modelId),
                 messages: coreMessages,
+                experimental_generateMessageId: () => uuid(),
                 experimental_transform: smoothStream({ chunking: 'word' }),
                 onFinish: async ({ response }) => {
                     const messages = appendResponseMessages({
@@ -150,6 +152,7 @@ export const completionsRouter = j.router({
                         return;
                     }
                     await completionsActions.insertMessage(db, {
+                        id: assistantMessage.id,
                         conversationId: id,
                         role: 'assistant',
                         content: assistantMessage.content,

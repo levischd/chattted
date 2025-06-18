@@ -155,7 +155,12 @@ export async function createBranchFromConversation(
     const [conversation] = await db
         .select()
         .from(conversationsTable)
-        .where(eq(conversationsTable.id, conversationId));
+        .where(
+            and(
+                eq(conversationsTable.id, conversationId),
+                eq(conversationsTable.userId, userId)
+            )
+        );
 
     if (!conversation) {
         throw new HTTPException(404, {
