@@ -1,7 +1,7 @@
 import { type ModelId, models } from '@/lib/config/models';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { Textarea } from '@headlessui/react';
-import { Ellipsis, Globe, Lightbulb, Paperclip } from 'lucide-react';
+import { Ellipsis, Globe, Paperclip } from 'lucide-react';
 import type React from 'react';
 import { ModelSelect } from './model-select';
 import { SubmitButton } from './submit-button';
@@ -56,9 +56,6 @@ export function ChatInput({
           </div>
           <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Globe className="size-4 text-brand-800" />
-          </div>
-          <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
-            <Lightbulb className="size-4 text-brand-800" />
           </div>
           <div className="cursor-not-allowed rounded-full border border-brand-200 p-2 transition-colors hover:bg-brand-100">
             <Ellipsis className="size-4 text-brand-800" />
