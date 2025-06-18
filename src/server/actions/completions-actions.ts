@@ -117,7 +117,6 @@ export async function syncMessages(
 ) {
     const existingMessages = await getExistingMessages(db, conversationId);
 
-    // Delete messages that are no longer in the input
     const messagesToDelete = existingMessages.filter(
         (msg) => !inputMessages.find((m) => m.id === msg.id)
     );
@@ -126,7 +125,6 @@ export async function syncMessages(
         await deleteMessage(db, message.id);
     }
 
-    // Insert new messages with their original IDs
     const messagesToInsert = inputMessages.filter(
         (msg) => !existingMessages.find((m) => m.id === msg.id)
     );

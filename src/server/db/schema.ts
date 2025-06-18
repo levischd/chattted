@@ -82,7 +82,6 @@ export const conversationsTable = pgTable(
     (table) => [
         index('conversations_user_id_idx').on(table.userId),
         index('conversations_created_at_idx').on(table.createdAt),
-        // Fulltext search index für Titel (sprachunabhängig)
         index('conversations_title_search_idx').using(
             'gin',
             sql`to_tsvector('simple', ${table.title})`
@@ -128,7 +127,6 @@ export const messagesTable = pgTable(
     (table) => [
         index('messages_conversation_id_idx').on(table.conversationId),
         index('messages_created_at_idx').on(table.createdAt),
-        // Fulltext search index für Message Content (sprachunabhängig)
         index('messages_content_search_idx').using(
             'gin',
             sql`to_tsvector('simple', ${table.content})`

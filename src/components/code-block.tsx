@@ -69,19 +69,16 @@ function CodeBlockBase({
     initial || null
   );
 
-  /* ───────────────────── Extract language ───────────────────── */
   const language = useMemo(() => {
     const m = LANGUAGE_REGEX.exec(className);
     return m?.[1] ?? '';
   }, [className]);
 
-  /* ───────────────────── Prepare code string ─────────────────── */
   const codeString = useMemo(
     () => String(children).replace(TRAILING_NEWLINE_REGEX, ''),
     [children]
   );
 
-  /* ───────────────────── Client-side highlighting ────────────── */
   useLayoutEffect(() => {
     if (!inline && language) {
       highlight(codeString, language as BundledLanguage).then(
@@ -90,14 +87,12 @@ function CodeBlockBase({
     }
   }, [codeString, language, inline]);
 
-  /* ───────────────────── Copy handler ────────────────────────── */
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(codeString);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [codeString]);
 
-  /* ───────────────────── Inline (<code>) mode ────────────────── */
   if (inline || (!language && !className)) {
     return (
       <code
@@ -109,7 +104,6 @@ function CodeBlockBase({
     );
   }
 
-  /* ───────────────────── Block (<pre>) mode ──────────────────── */
   return (
     <div className="not-prose my-2 flex w-full flex-col overflow-hidden">
       {/* Header */}

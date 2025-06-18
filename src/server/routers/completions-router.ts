@@ -63,7 +63,6 @@ export const completionsRouter = j.router({
             const { db, user } = ctx;
             const { id, messages: inputMessages, modelId } = input;
 
-            // Validate model and provider upfront
             const model = models[modelId];
             if (!model || !model.provider) {
                 throw new HTTPException(400, {
@@ -85,7 +84,6 @@ export const completionsRouter = j.router({
                 });
             }
 
-            // Get or create conversation
             const conversation =
                 await completionsActions.getOrCreateConversation(
                     db,
@@ -94,7 +92,6 @@ export const completionsRouter = j.router({
                     user.id
                 );
 
-            // Update model if changed
             if (conversation.modelId !== modelId) {
                 await completionsActions.updateConversationModel(
                     db,
@@ -120,7 +117,6 @@ export const completionsRouter = j.router({
                 });
             }
 
-            // Generate title if it's the first message
             if (inputMessages.length === 1) {
                 const title = await generateTitle(
                     aiProvider.languageModel(DEFAULT_TITLE_MODEL_ID),
@@ -129,7 +125,6 @@ export const completionsRouter = j.router({
                 await completionsActions.updateConversationTitle(db, id, title);
             }
 
-            // Prepare messages for the model
             const coreMessages = inputMessages.map((message) => ({
                 id: message.id,
                 role: message.role,

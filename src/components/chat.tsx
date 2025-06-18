@@ -20,7 +20,6 @@ export function Chat({ id, isDraft }: ChatProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Fetch conversation data with useQuery
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation', id],
     queryFn: async () => {
@@ -91,7 +90,6 @@ export function Chat({ id, isDraft }: ChatProps) {
     });
   };
 
-  // Show loading state (but not for 404 errors which indicate new conversation)
   if (isLoading && !error) {
     return <ChatLoading />;
   }

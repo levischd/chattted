@@ -36,7 +36,6 @@ export const useMessageActions = ({
     console.log('delete');
   }, []);
 
-  // Memoize das gesamte Actions-Objekt
   return useMemo(
     () => ({
       handleCopy,
