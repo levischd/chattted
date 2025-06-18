@@ -21,14 +21,16 @@ const TRAILING_NEWLINE_REGEX = /\n$/;
 interface CopyButtonProps {
   onCopy: () => void;
   copied: boolean;
+  disabled?: boolean;
 }
 
 const CopyButton = memo<CopyButtonProps>(
-  ({ onCopy, copied }) => (
+  ({ onCopy, copied, disabled = false }) => (
     <button
       type="button"
       onClick={onCopy}
-      className="flex items-center gap-1 text-brand-700 text-xs transition-colors hover:text-brand-900"
+      disabled={disabled}
+      className="flex items-center gap-1 text-brand-700 text-xs transition-colors hover:text-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {copied ? (
         <>
@@ -43,7 +45,7 @@ const CopyButton = memo<CopyButtonProps>(
       )}
     </button>
   ),
-  (prev, next) => prev.copied === next.copied
+  (prev, next) => prev.copied === next.copied && prev.disabled === next.disabled
 );
 
 /* -------------------------------------------------- */
@@ -74,10 +76,10 @@ function CodeBlockBase({
     return m?.[1] ?? '';
   }, [className]);
 
-  const codeString = useMemo(
-    () => String(children).replace(TRAILING_NEWLINE_REGEX, ''),
-    [children]
-  );
+  const codeString = useMemo(() => {
+    if (!children) return '';
+    return String(children).replace(TRAILING_NEWLINE_REGEX, '');
+  }, [children]);
 
   useLayoutEffect(() => {
     if (!inline && language) {
@@ -88,6 +90,7 @@ function CodeBlockBase({
   }, [codeString, language, inline]);
 
   const handleCopy = useCallback(async () => {
+    if (!codeString) return;
     await navigator.clipboard.writeText(codeString);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -106,15 +109,17 @@ function CodeBlockBase({
 
   return (
     <div className="not-prose my-2 flex w-full flex-col overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between overflow-hidden rounded-t-xl border border-brand-200 bg-brand-100 px-4 py-2">
         <span className="font-medium text-brand-600 text-xs">
           {language || 'text'}
         </span>
-        <CopyButton onCopy={handleCopy} copied={copied} />
+        <CopyButton
+          onCopy={handleCopy}
+          copied={copied}
+          disabled={!codeString}
+        />
       </div>
 
-      {/* Highlighted code using shiki */}
       <div className="w-full overflow-hidden rounded-b-xl border border-brand-200 border-t-0 bg-brand-50 text-xs">
         <div className="m-0 bg-transparent p-4 text-sm">
           {highlightedCode ?? (
