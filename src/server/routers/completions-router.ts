@@ -6,10 +6,9 @@ import {
 } from '@/lib/config/models';
 import { generateTitle } from '@/lib/llm/generate-title';
 import { appendResponseMessages, smoothStream, streamText } from 'ai';
-import { eq } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
-import { conversationsTable, messagesTable } from '../db/schema';
+import * as completionsActions from '../actions/completions-actions';
 import { j, privateProcedure } from '../jstack';
 
 export const completionsRouter = j.router({
@@ -23,6 +22,12 @@ export const completionsRouter = j.router({
                         role: z.enum(['user', 'assistant']),
                         content: z.string(),
                     })
+                ),
+                attachments: z.array(
+                    z
+                        .file()
+                        .max(10_000_000)
+                        .mime(['image/png', 'application/pdf', 'image/jpeg'])
                 ),
                 modelId: z.enum(Object.keys(models) as [ModelId, ...ModelId[]]),
             })
@@ -53,105 +58,34 @@ export const completionsRouter = j.router({
                 });
             }
 
-            // Get or create conversation first
-            let [conversation] = await db
-                .select()
-                .from(conversationsTable)
-                .where(eq(conversationsTable.id, id));
+            // Get or create conversation
+            const conversation =
+                await completionsActions.getOrCreateConversation(
+                    db,
+                    id,
+                    modelId,
+                    user.id
+                );
 
-            if (!conversation) {
-                try {
-                    [conversation] = await db
-                        .insert(conversationsTable)
-                        .values({
-                            id,
-                            modelId,
-                            userId: user.id,
-                        })
-                        .returning();
-                } catch (error) {
-                    // Handle potential duplicate key error
-                    [conversation] = await db
-                        .select()
-                        .from(conversationsTable)
-                        .where(eq(conversationsTable.id, id));
-                }
-            }
-
-            if (!conversation) {
-                throw new HTTPException(500, {
-                    message: 'Failed to create or retrieve conversation',
-                });
-            }
-
-            // Update conversation model if changed
+            // Update model if changed
             if (conversation.modelId !== modelId) {
-                try {
-                    await db
-                        .update(conversationsTable)
-                        .set({ modelId })
-                        .where(eq(conversationsTable.id, id));
-                } catch (error) {
-                    console.error(
-                        'Failed to update conversation model:',
-                        error
-                    );
-                    // Continue with old model rather than failing
-                }
+                await completionsActions.updateConversationModel(
+                    db,
+                    id,
+                    modelId
+                );
             }
 
-            // Handle message synchronization sequentially to minimize race conditions
+            // Sync messages
             try {
-                // Get existing messages
-                const existingMessages = await db
-                    .select()
-                    .from(messagesTable)
-                    .where(eq(messagesTable.conversationId, id));
-
-                // Delete messages that are no longer in the input
-                const messagesToDelete = existingMessages.filter(
-                    (msg) => !inputMessages.find((m) => m.id === msg.id)
+                await completionsActions.syncMessages(
+                    db,
+                    id,
+                    inputMessages.map((message) => ({
+                        ...message,
+                        conversationId: id,
+                    }))
                 );
-
-                for (const message of messagesToDelete) {
-                    try {
-                        await db
-                            .delete(messagesTable)
-                            .where(eq(messagesTable.id, message.id));
-                    } catch (error) {
-                        console.error(
-                            `Failed to delete message ${message.id}:`,
-                            error
-                        );
-                    }
-                }
-
-                // Insert new messages with their original IDs
-                const messagesToInsert = inputMessages.filter(
-                    (msg) => !existingMessages.find((m) => m.id === msg.id)
-                );
-
-                for (const message of messagesToInsert) {
-                    try {
-                        await db.insert(messagesTable).values({
-                            id: message.id, // Keep original ID
-                            conversationId: id,
-                            role: message.role,
-                            content: message.content,
-                        });
-                    } catch (error) {
-                        console.error(
-                            `Failed to insert message ${message.id}:`,
-                            error
-                        );
-                        // For critical user messages, we might want to throw here
-                        if (message.role === 'user') {
-                            throw new HTTPException(500, {
-                                message: 'Failed to save user message',
-                            });
-                        }
-                    }
-                }
             } catch (error) {
                 console.error('Message synchronization failed:', error);
                 throw new HTTPException(500, {
@@ -161,19 +95,11 @@ export const completionsRouter = j.router({
 
             // Generate title if it's the first message
             if (inputMessages.length === 1) {
-                try {
-                    const title = await generateTitle(
-                        aiProvider.languageModel(DEFAULT_TITLE_MODEL_ID),
-                        inputMessages
-                    );
-
-                    await db
-                        .update(conversationsTable)
-                        .set({ title })
-                        .where(eq(conversationsTable.id, id));
-                } catch (error) {
-                    console.error('Failed to generate or save title:', error);
-                }
+                const title = await generateTitle(
+                    aiProvider.languageModel(DEFAULT_TITLE_MODEL_ID),
+                    inputMessages
+                );
+                await completionsActions.updateConversationTitle(db, id, title);
             }
 
             // Prepare messages for the model
@@ -189,7 +115,7 @@ export const completionsRouter = j.router({
                 messages: coreMessages,
                 experimental_transform: smoothStream({ chunking: 'word' }),
                 onFinish: async ({ response }) => {
-                    const [, assistantMessage] = appendResponseMessages({
+                    const messages = appendResponseMessages({
                         messages: coreMessages.map((message) => ({
                             id: message.id,
                             role: message.role,
@@ -197,23 +123,16 @@ export const completionsRouter = j.router({
                         })),
                         responseMessages: response.messages,
                     });
+                    const assistantMessage = messages.at(-1);
                     if (!assistantMessage) {
                         return;
                     }
-                    console.log('onFinish', assistantMessage);
-                    try {
-                        await db.insert(messagesTable).values({
-                            conversationId: id,
-                            role: 'assistant',
-                            content: assistantMessage.content,
-                            parts: assistantMessage.parts,
-                        });
-                    } catch (error) {
-                        console.error(
-                            'Failed to save assistant message:',
-                            error
-                        );
-                    }
+                    await completionsActions.insertMessage(db, {
+                        conversationId: id,
+                        role: 'assistant',
+                        content: assistantMessage.content,
+                        parts: assistantMessage.parts,
+                    });
                 },
                 onChunk: ({ chunk }) => {
                     if (chunk.type === 'text-delta') {
@@ -227,7 +146,7 @@ export const completionsRouter = j.router({
             });
 
             c.req.raw.signal.addEventListener('abort', async () => {
-                await db.insert(messagesTable).values({
+                await completionsActions.insertMessage(db, {
                     conversationId: id,
                     role: 'assistant',
                     content: finalContent,

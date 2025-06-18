@@ -4,6 +4,7 @@ import { useCreateBranch } from '@/hooks/use-create-branch';
 import { useMessageActions } from '@/hooks/use-message-actions';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { UIMessage } from 'ai';
+import equal from 'fast-deep-equal';
 import { memo } from 'react';
 import { MessageActions } from './message-actions';
 
@@ -14,7 +15,7 @@ interface UserMessageProps {
   setMessages: UseChatHelpers['setMessages'];
 }
 
-function UserMessageComponent({
+function NonMemoizedUserMessage({
   conversationId,
   message,
   reload,
@@ -48,9 +49,9 @@ function UserMessageComponent({
 }
 
 export const UserMessage = memo(
-  UserMessageComponent,
+  NonMemoizedUserMessage,
   (prev, next) =>
+    equal(prev.message, next.message) &&
     prev.conversationId === next.conversationId &&
-    prev.reload === next.reload &&
-    prev.message.content === next.message.content
+    prev.reload === next.reload
 );

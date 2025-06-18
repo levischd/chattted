@@ -30,13 +30,24 @@ export function Chat({ id, isDraft }: ChatProps) {
     enabled: !isDraft,
   });
 
-  // Determine initial values based on data or defaults
+  useEffect(() => {
+    if (error) {
+      router.push('/chat/new');
+    }
+  }, [error, router]);
+
   const { conversation, messages } = data || {};
   const initialMessages = messages || [];
-  const initialModelId =
-    (conversation?.modelId as ModelId) || DEFAULT_LLM_MODEL_ID;
 
-  const [modelId, setModelId] = useState<ModelId>(initialModelId);
+  const [modelId, setModelId] = useState<ModelId>(DEFAULT_LLM_MODEL_ID);
+
+  useEffect(() => {
+    if (conversation?.modelId) {
+      setModelId(conversation.modelId as ModelId);
+    }
+  }, [conversation?.modelId]);
+
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   const {
     messages: chatMessages,
@@ -52,9 +63,11 @@ export function Chat({ id, isDraft }: ChatProps) {
     id,
     api: '/api/completions/create',
     initialMessages,
+    experimental_throttle: 150,
     experimental_prepareRequestBody: (options) => {
       return {
         ...options,
+        attachments,
         modelId,
       };
     },
@@ -64,33 +77,6 @@ export function Chat({ id, isDraft }: ChatProps) {
       });
     },
   });
-
-  // Handle errors with useEffect to avoid conditional returns after hooks
-  useEffect(() => {
-    if (error) {
-      if ('status' in error) {
-        const status = (error as unknown as { status: number }).status;
-        if (status === 401) {
-          router.push('/sign-in');
-          return;
-        }
-        if (status === 403 || status === 400) {
-          router.push('/chat/new');
-          return;
-        }
-        // For 404 (conversation not found), treat as new conversation - no redirect needed
-        if (status !== 404) {
-          // For other errors, redirect to new chat
-          router.push('/chat/new');
-          return;
-        }
-      } else {
-        // For other errors, redirect to new chat
-        router.push('/chat/new');
-        return;
-      }
-    }
-  }, [error, router]);
 
   const handleSubmit: UseChatHelpers['handleSubmit'] = (
     event,

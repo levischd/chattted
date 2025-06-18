@@ -7,6 +7,7 @@ import React, { memo, useMemo } from 'react';
 
 import { useCreateBranch } from '@/hooks/use-create-branch';
 import { useMessageActions } from '@/hooks/use-message-actions';
+import equal from 'fast-deep-equal';
 import { MessageActions } from './message-actions';
 import { ReasoningMessagePart } from './reasoning-message-part';
 import { TextMessagePart } from './text-message-part';
@@ -19,7 +20,7 @@ interface AssistantMessageProps {
   setMessages: UseChatHelpers['setMessages'];
 }
 
-function AssistantMessageComponent({
+function NonMemoizedAssistantMessage({
   status,
   conversationId,
   message,
@@ -89,11 +90,9 @@ function AssistantMessageComponent({
 }
 
 export const AssistantMessage = memo(
-  AssistantMessageComponent,
+  NonMemoizedAssistantMessage,
   (prev, next) =>
     prev.conversationId === next.conversationId &&
     prev.reload === next.reload &&
-    prev.message.id === next.message.id &&
-    prev.message.role === next.message.role &&
-    prev.message.content === next.message.content
+    equal(prev.message, next.message)
 );

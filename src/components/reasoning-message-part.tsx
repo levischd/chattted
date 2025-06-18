@@ -1,12 +1,13 @@
 import type { UseChatHelpers } from '@ai-sdk/react';
 import type { ReasoningUIPart } from '@ai-sdk/ui-utils';
 import { Button } from '@headlessui/react';
+import equal from 'fast-deep-equal';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Markdown } from './markdown';
 
-export function ReasoningMessagePart({
+function NonMemoizedReasoningMessagePart({
   part,
   status,
 }: {
@@ -54,3 +55,13 @@ export function ReasoningMessagePart({
     </div>
   );
 }
+
+export const ReasoningMessagePart = memo(
+  NonMemoizedReasoningMessagePart,
+  (prevProps, nextProps) => {
+    return (
+      equal(prevProps.part, nextProps.part) &&
+      prevProps.status === nextProps.status
+    );
+  }
+);
